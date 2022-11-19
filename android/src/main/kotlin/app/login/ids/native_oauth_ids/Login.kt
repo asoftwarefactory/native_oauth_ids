@@ -32,7 +32,7 @@ class Login : Activity() {
     }
 
     fun initWebView(url : String){
-        webView.settings.cacheMode = WebSettings.LOAD_CACHE_ONLY
+        webView.settings.cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
         webView.webViewClient = object : WebViewClient(){
             override fun shouldOverrideUrlLoading(webView: WebView, url: String): Boolean {
                 return onChangeUrl(webView, url);
