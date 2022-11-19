@@ -107,18 +107,17 @@ class Login : Activity() {
 
     private fun destroyWebView() {
         webView.removeAllViews()
-        webView.clearHistory()
-        webView.clearCache(true)
-        webView.loadUrl("about:blank")
-        webView.onPause()
-        webView.removeAllViews()
         webView.destroyDrawingCache()
         webView.pauseTimers()
-        webView.clearCache(true)
+        // webView.clearCache(true)
         webView.clearHistory()
         val webSettings: WebSettings = webView.getSettings()
         webSettings.saveFormData = false
         webSettings.savePassword = false
+        clearCookiesWebView();
+    }
+
+    private fun clearCookiesWebView(){
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
             CookieManager.getInstance().removeAllCookies(null)
             CookieManager.getInstance().flush()
