@@ -1,7 +1,7 @@
 import Flutter
 import UIKit
 
-public class SwiftNativeOauthIdsPlugin: NSObject, FlutterPlugin {
+public class SwiftNativeOauthIdsPlugin: NSObject, FlutterPlugin, CieIdDelegate {
 
     var eventSink: FlutterEventSink?
 
@@ -71,15 +71,15 @@ public class SwiftNativeOauthIdsPlugin: NSObject, FlutterPlugin {
 
         func  CieIDAuthenticationClosedWithSuccess() {
 
-            }
+        }
 
-            func  CieIDAuthenticationCanceled() {
+        func  CieIDAuthenticationCanceled() {
 
-            }
+        }
 
-            func  CieIDAuthenticationClosedWithError(errorMessage: String) {
+        func  CieIDAuthenticationClosedWithError(errorMessage: String) {
 
-            }
+        }
 
 }
 
