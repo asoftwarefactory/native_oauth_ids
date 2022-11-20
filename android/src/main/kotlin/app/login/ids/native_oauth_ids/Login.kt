@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.text.TextUtils
 import android.util.Log
 import android.webkit.*
+import androidx.annotation.RequiresApi
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 
 class Login : Activity() {
@@ -31,33 +32,37 @@ class Login : Activity() {
         destroyWebView()
     }
 
-    fun initWebView(url : String){
+    private fun initWebView(url : String){
         webView.settings.cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
         webView.webViewClient = object : WebViewClient(){
             override fun shouldOverrideUrlLoading(webView: WebView, url: String): Boolean {
-                return onChangeUrl(webView, url);
+                onChangeUrl(webView, url);
+                return true
             }
+           override on
+            @RequiresApi(Build.VERSION_CODES.M)
             override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
-                // Toast.makeText(activity, "Got Error! $error", Toast.LENGTH_SHORT).show()
-                view.loadUrl(errorUrl)
-                return
+                Log.d("WEB VIEW URL ERROR : ",view.url?:"")
+                Log.d("LOAD URL ERROR : ",error.errorCode.toString())
+                Log.d("ERROR DESCRIPTION : ",error.description.toString())
+                errorLogin()
             }
         }
         webView?.settings?.databaseEnabled = true
         webView?.settings?.domStorageEnabled = true
         webView.settings.apply {
             javaScriptEnabled = true
-            allowContentAccess = false
-            allowFileAccess = false
+            allowContentAccess = true
+            allowFileAccess = true
             allowFileAccessFromFileURLs = false
             allowUniversalAccessFromFileURLs = false
         }
-        webView.settings.setSupportZoom(true) //TODO :
+        webView.settings.setSupportZoom(true)
         webView.loadUrl(url)
     }
 
-    fun onChangeUrl(view: WebView, urlString: String):Boolean{
-        Log.d("URL CHANGE : ", urlString)
+    fun onChangeUrl(view: WebView, urlString: String):Unit{
+        Log.d("URL CHANGED",urlString)
         val sessioStateKey = "session_state";
         val codeKey = "code"
         if(urlString.contains(sessioStateKey) && urlString.contains(codeKey)){
@@ -65,25 +70,23 @@ class Login : Activity() {
             val query = "$codeKey=${url.getQueryParameter(codeKey)?:""}&$sessioStateKey=${url.getQueryParameter(sessioStateKey)?:""}"
             sendLoginData(query)
             closeActivity()
-        }else if (urlString.contains("OpenApp")) {
+            return
+        }
+        if (urlString.contains("OpenApp")) {
             try {
                 val intent = Intent()
                 intent.setClassName("it.ipzs.cieid", "it.ipzs.cieid.BaseActivity")
                 intent.data = Uri.parse(urlString)
                 intent.action = Intent.ACTION_VIEW
-                startActivityForResult(intent,0);
-            } catch (a : ActivityNotFoundException) {
-                startActivity(
-                    Intent(
-                        Intent.ACTION_VIEW,
-                        Uri.parse("https://play.google.com/store/apps/details?id=it.ipzs.cieid")
-                    )
-                )
+                startActivityForResult(intent, 0);
+                return
+            } catch (a: ActivityNotFoundException) {
+                errorLogin()
+                return
             }
-        }else{
-            view.loadUrl(urlString)
         }
-        return true
+        view.loadUrl(urlString)
+
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -94,8 +97,14 @@ class Login : Activity() {
             if (!TextUtils.isEmpty(url)) {
                 if (url != null) {
                     webView.loadUrl(url)
+                }else{
+                    errorLogin()
                 }
+            }else{
+                errorLogin()
             }
+        }else{
+            errorLogin()
         }
     }
 
@@ -109,11 +118,12 @@ class Login : Activity() {
         webView.removeAllViews()
         webView.destroyDrawingCache()
         webView.pauseTimers()
-        // webView.clearCache(true)
+        webView.clearCache(true)
         webView.clearHistory()
         val webSettings: WebSettings = webView.getSettings()
         webSettings.saveFormData = false
         webSettings.savePassword = false
+        webView.destroy();
         clearCookiesWebView();
     }
 
@@ -130,6 +140,12 @@ class Login : Activity() {
             cookieSyncMngr.stopSync()
             cookieSyncMngr.sync()
         }
+    }
+
+    private fun errorLogin(){
+        // Toast.makeText(applicationContext, "Error Login", Toast.LENGTH_SHORT).show()
+        sendLoginData("ERROR")
+        closeActivity()
     }
 
     private fun closeActivity(){
