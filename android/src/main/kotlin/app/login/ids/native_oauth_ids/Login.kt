@@ -39,7 +39,6 @@ class Login : Activity() {
                 onChangeUrl(webView, url);
                 return true
             }
-           override on
             @RequiresApi(Build.VERSION_CODES.M)
             override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
                 Log.d("WEB VIEW URL ERROR : ",view.url?:"")
