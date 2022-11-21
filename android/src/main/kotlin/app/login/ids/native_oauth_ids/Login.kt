@@ -17,6 +17,7 @@ class Login : Activity() {
     private lateinit var webView:WebView;
     private var bundle: Bundle?=null
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         bundle = savedInstanceState
@@ -32,7 +33,10 @@ class Login : Activity() {
         destroyWebView()
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun initWebView(url : String){
+        val chromeClient = WebChromeClient()
+        webView.webChromeClient.apply { chromeClient }
         webView.settings.cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
         webView.webViewClient = object : WebViewClient(){
             override fun shouldOverrideUrlLoading(webView: WebView, url: String): Boolean {
@@ -41,6 +45,10 @@ class Login : Activity() {
             }
             @RequiresApi(Build.VERSION_CODES.M)
             override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
+                if(error.errorCode==-6){
+                    Log.d("CACHE ERROR : ",error.errorCode.toString())
+                  return
+                }
                 Log.d("WEB VIEW URL ERROR : ",view.url?:"")
                 Log.d("LOAD URL ERROR : ",error.errorCode.toString())
                 Log.d("ERROR DESCRIPTION : ",error.description.toString())
