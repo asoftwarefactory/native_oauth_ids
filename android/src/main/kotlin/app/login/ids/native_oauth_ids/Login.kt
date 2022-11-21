@@ -1,7 +1,9 @@
 package app.login.ids.native_oauth_ids
 import android.app.Activity
+import android.app.ProgressDialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -12,10 +14,12 @@ import androidx.annotation.RequiresApi
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 
 class Login : Activity() {
+
     private lateinit var urlInput: String;
     val errorUrl = "about:blank"
     private lateinit var webView:WebView;
     private var bundle: Bundle?=null
+    private var progressDialog:ProgressDialog?=null
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,6 +57,17 @@ class Login : Activity() {
                 Log.d("LOAD URL ERROR : ",error.errorCode.toString())
                 Log.d("ERROR DESCRIPTION : ",error.description.toString())
                 errorLogin()
+            }
+
+            override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+                super.onPageStarted(view, url, favicon)
+                onPageStarted()
+            }
+
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                progressDialog?.hide()
+                progressDialog = null
             }
         }
         webView?.settings?.databaseEnabled = true
@@ -149,6 +164,14 @@ class Login : Activity() {
         }
     }
 
+    private fun onPageStarted(){
+        progressDialog = ProgressDialog(this)
+        progressDialog?.setTitle("Caricamento ...")
+        progressDialog?.show()
+        progressDialog?.setCanceledOnTouchOutside(false);
+        progressDialog?.setCancelable(false);
+    }
+
     private fun errorLogin(){
         // Toast.makeText(applicationContext, "Error Login", Toast.LENGTH_SHORT).show()
         sendLoginData("ERROR")
@@ -158,4 +181,5 @@ class Login : Activity() {
     private fun closeActivity(){
         finish()
     }
+
 }

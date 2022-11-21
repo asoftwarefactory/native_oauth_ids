@@ -29,7 +29,7 @@
             </intent-filter>
 
         </activity>
-        <activity android:name="app.login.ids.native_oauth_ids.Login" android:theme="@android:style/Theme.Light.NoTitleBar"></activity>
+        <activity android:name="app.login.ids.native_oauth_ids.Login" android:theme="@style/Theme.AppCompat.NoActionBar"></activity>
 
         <meta-data
             android:name="flutterEmbedding"
