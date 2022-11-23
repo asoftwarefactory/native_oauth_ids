@@ -18,8 +18,8 @@ class Login : Activity() {
     private lateinit var urlInput: String;
     val errorUrl = "about:blank"
     private lateinit var webView:WebView;
-    private var bundle: Bundle?=null
-    private var progressDialog:ProgressDialog?=null
+    private var bundle: Bundle?=null;
+    private lateinit var progressDialog:ProgressDialog;
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,6 +28,10 @@ class Login : Activity() {
         val b = intent.extras
         urlInput = b?.getString("url") ?: errorUrl
         webView= WebView(this.applicationContext)
+        progressDialog = ProgressDialog(this)
+        progressDialog.setCanceledOnTouchOutside(false);
+        progressDialog.setCancelable(true);
+        progressDialog.setTitle("Caricamento ...")
         initWebView(urlInput)
         setContentView(webView)
     }
@@ -67,7 +71,6 @@ class Login : Activity() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 progressDialog?.hide()
-                progressDialog = null
             }
         }
         webView?.settings?.databaseEnabled = true
@@ -165,11 +168,7 @@ class Login : Activity() {
     }
 
     private fun onPageStarted(){
-        progressDialog = ProgressDialog(this)
-        progressDialog?.setTitle("Caricamento ...")
-        progressDialog?.show()
-        progressDialog?.setCanceledOnTouchOutside(false);
-        progressDialog?.setCancelable(false);
+        progressDialog.show()
     }
 
     private fun errorLogin(){

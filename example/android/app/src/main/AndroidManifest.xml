@@ -29,8 +29,7 @@
             </intent-filter>
 
         </activity>
-        <activity android:name="app.login.ids.native_oauth_ids.Login" android:theme="@style/Theme.AppCompat.NoActionBar"></activity>
-
+        <activity android:screenOrientation="portrait" android:name="app.login.ids.native_oauth_ids.Login" android:theme="@style/Theme.AppCompat.NoActionBar"></activity>
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
