@@ -53,12 +53,11 @@ class CieIDWKWebViewController: UIViewController, WKNavigationDelegate {
                                                 
             //Check if SP_URL key exists in info.plist
       
-                
             //Check if SP_URL_KEY contains a valid URL
             if (path?.containsValidSPUrl ?? false){
                     
                 let url = URL(string: path!)!
-                webView.load(URLRequest(url: url))
+                webView.load(self.removeCookiesFromRequest(urlRequest: URLRequest(url: url)))
                                 
             }else{
                 
@@ -103,13 +102,11 @@ class CieIDWKWebViewController: UIViewController, WKNavigationDelegate {
     }
     
     private func addActivityIndicatory() {
-        
         activityIndicator = UIActivityIndicatorView(style: .large)
         activityIndicator.color = UIColor.lightGray
         activityIndicator.center = self.view.center
         self.view.addSubview(activityIndicator)
         activityIndicator.startAnimating()
-        
     }
     
     private func removeActivityIndicatoryIfPresent() {
@@ -151,9 +148,7 @@ class CieIDWKWebViewController: UIViewController, WKNavigationDelegate {
                     if urlString.containsValidIdpResponse{
                         
                         let url = URL(string: urlString)!
-                        
                         print(url)
-                        
                         self.webView.load(URLRequest(url: url))
                             
                         /*
@@ -163,7 +158,6 @@ class CieIDWKWebViewController: UIViewController, WKNavigationDelegate {
                         */
                         self.delegate?.CieIDAuthenticationClosedWithSuccess()
                             
-                        
                         
                     }else{
                         
@@ -237,15 +231,19 @@ class CieIDWKWebViewController: UIViewController, WKNavigationDelegate {
         
     }
     
+    private func removeCookiesFromRequest(urlRequest:URLRequest) -> URLRequest{
+        var request = urlRequest;
+        request.httpShouldHandleCookies = false
+        return request;
+    }
+    
     internal func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: ((WKNavigationActionPolicy) -> Void)) {
 
         switch navigationAction.navigationType {
         case .linkActivated:
             
             if navigationAction.targetFrame == nil {
-                
-                self.webView.load(navigationAction.request)// It will load that link in same WKWebView
-                
+                self.webView.load(self.removeCookiesFromRequest(urlRequest: navigationAction.request))
             }
             
             default:
