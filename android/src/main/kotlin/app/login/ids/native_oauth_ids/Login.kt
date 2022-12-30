@@ -1,184 +1,231 @@
-package app.login.ids.native_oauth_ids
-import android.app.Activity
-import android.app.ProgressDialog
-import android.content.ActivityNotFoundException
-import android.content.Intent
-import android.graphics.Bitmap
-import android.net.Uri
-import android.os.Build
-import android.os.Bundle
-import android.text.TextUtils
-import android.util.Log
-import android.webkit.*
-import androidx.annotation.RequiresApi
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
+package nativeoauthids;
 
-class Login : Activity() {
+import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.text.TextUtils;
+import android.util.Log;
+import android.webkit.CookieManager;
+import android.webkit.CookieSyncManager;
+import android.webkit.WebChromeClient;
+import android.webkit.WebResourceError;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-    private lateinit var urlInput: String;
-    val errorUrl = "about:blank"
-    private lateinit var webView:WebView;
-    private var bundle: Bundle?=null;
-    private lateinit var progressDialog:ProgressDialog;
+public class Login extends Activity {
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        bundle = savedInstanceState
-        val b = intent.extras
-        urlInput = b?.getString("url") ?: errorUrl
-        webView= WebView(this.applicationContext)
-        progressDialog = ProgressDialog(this)
-        progressDialog.setCanceledOnTouchOutside(false);
-        progressDialog.setCancelable(true);
-        progressDialog.setTitle("Caricamento ...")
-        initWebView(urlInput)
-        setContentView(webView)
-    }
+  private String urlInput;
+  private final String errorUrl = "about:blank";
+  private WebView webView;
+  private Bundle bundle;
+  private ProgressDialog progressDialog;
 
-    override fun onDestroy() {
-        super.onDestroy()
-        destroyWebView()
-    }
+  @RequiresApi(Build.VERSION_CODES.O)
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    bundle = savedInstanceState;
+    Bundle b = getIntent().getExtras();
+    urlInput = b != null ? b.getString("url") : errorUrl;
+    webView = new WebView(this);
+    initLoadingDialog();
+    setContentView(webView);
+    initWebView(urlInput);
+  }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun initWebView(url : String){
-        val chromeClient = WebChromeClient()
-        webView.webChromeClient.apply { chromeClient }
-        webView.settings.cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
-        webView.webViewClient = object : WebViewClient(){
-            override fun shouldOverrideUrlLoading(webView: WebView, url: String): Boolean {
-                onChangeUrl(webView, url);
-                return true
-            }
-            @RequiresApi(Build.VERSION_CODES.M)
-            override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
-                if(error.errorCode==-6){
-                    Log.d("CACHE ERROR : ",error.errorCode.toString())
-                  return
-                }
-                Log.d("WEB VIEW URL ERROR : ",view.url?:"")
-                Log.d("LOAD URL ERROR : ",error.errorCode.toString())
-                Log.d("ERROR DESCRIPTION : ",error.description.toString())
-                errorLogin()
-            }
+  @Override
+  protected void onDestroy() {
+    // sendLoginData("ERROR");
+    super.onDestroy();
+  }
 
-            override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-                super.onPageStarted(view, url, favicon)
-                onPageStarted()
-            }
+  @Override
+  public void onBackPressed() {
+    sendLoginData("ERROR");
+    super.onBackPressed();
+  }
 
-            override fun onPageFinished(view: WebView?, url: String?) {
-                super.onPageFinished(view, url)
-                progressDialog?.hide()
-            }
+  private void initWebView(String url) {
+    WebChromeClient chromeClient = new WebChromeClient();
+    webView.setWebChromeClient(chromeClient);
+    webView.getSettings().setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
+    webView.setWebViewClient(new WebViewClient() {
+      @Override
+      public boolean shouldOverrideUrlLoading(WebView webView, String url) {
+        onChangeUrl(webView, url);
+        return true;
+      }
+
+      @RequiresApi(Build.VERSION_CODES.M)
+      @Override
+      public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+        if (error.getErrorCode() == -6) {
+          Log.d("CACHE ERROR : ", String.valueOf(error.getErrorCode()));
+
+          disposeLoadingDialog();
+          return;
         }
-        webView?.settings?.databaseEnabled = true
-        webView?.settings?.domStorageEnabled = true
-        webView.settings.apply {
-            javaScriptEnabled = true
-            allowContentAccess = true
-            allowFileAccess = true
-            allowFileAccessFromFileURLs = false
-            allowUniversalAccessFromFileURLs = false
-        }
-        webView.settings.setSupportZoom(true)
-        webView.loadUrl(url)
+        Log.d("WEB VIEW URL ERROR : ", view.getUrl() != null ? view.getUrl() : "");
+        Log.d("LOAD URL ERROR : ", String.valueOf(error.getErrorCode()));
+        Log.d("ERROR DESCRIPTION : ", error.getDescription().toString());
+        sendLoginData("ERROR");
+      }
+
+      @Override
+      public void onPageStarted(WebView view, String url, Bitmap favicon) {
+        super.onPageStarted(view, url, favicon);
+        showLoadingDialog();
+      }
+
+      @Override
+      public void onPageFinished(WebView view, String url) {
+        super.onPageFinished(view, url);
+        disposeLoadingDialog();
+      }
+
+    });
+
+    webView.getSettings().setDatabaseEnabled(true);
+    webView.getSettings().setDomStorageEnabled(true);
+    WebSettings settings = webView.getSettings();
+    settings.setJavaScriptEnabled(true);
+    settings.setAllowContentAccess(true);
+    settings.setAllowFileAccess(true);
+    settings.setAllowFileAccessFromFileURLs(false);
+    settings.setAllowUniversalAccessFromFileURLs(false);
+    webView.getSettings().setSupportZoom(true);
+    webView.loadUrl(url);
+  }
+
+  private void onChangeUrl(WebView view, String urlString) {
+    Log.d("URL CHANGED", urlString);
+    String sessioStateKey = "session_state";
+    String codeKey = "code";
+    if (urlString.contains(sessioStateKey) && urlString.contains(codeKey)) {
+      Uri url = Uri.parse(urlString);
+      String query = codeKey + "=" + (url.getQueryParameter(codeKey) != null ? url.getQueryParameter(codeKey) : "")
+          + "&" + sessioStateKey + "="
+          + (url.getQueryParameter(sessioStateKey) != null ? url.getQueryParameter(sessioStateKey) : "");
+      sendLoginData(query);
+      termiateLogin();
+      return;
     }
-
-    fun onChangeUrl(view: WebView, urlString: String):Unit{
-        Log.d("URL CHANGED",urlString)
-        val sessioStateKey = "session_state";
-        val codeKey = "code"
-        if(urlString.contains(sessioStateKey) && urlString.contains(codeKey)){
-            val url : Uri = Uri.parse(urlString)
-            val query = "$codeKey=${url.getQueryParameter(codeKey)?:""}&$sessioStateKey=${url.getQueryParameter(sessioStateKey)?:""}"
-            sendLoginData(query)
-            closeActivity()
-            return
-        }
-        if (urlString.contains("OpenApp")) {
-            try {
-                val intent = Intent()
-                intent.setClassName("it.ipzs.cieid", "it.ipzs.cieid.BaseActivity")
-                intent.data = Uri.parse(urlString)
-                intent.action = Intent.ACTION_VIEW
-                startActivityForResult(intent, 0);
-                return
-            } catch (a: ActivityNotFoundException) {
-                errorLogin()
-                return
-            }
-        }
-        view.loadUrl(urlString)
-
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (resultCode == Activity.RESULT_OK) {
-            val data: Intent? = data
-            val url = data?.getStringExtra("URL")
-            if (!TextUtils.isEmpty(url)) {
-                if (url != null) {
-                    webView.loadUrl(url)
-                }else{
-                    errorLogin()
-                }
-            }else{
-                errorLogin()
-            }
+    if (urlString.contains("OpenApp")) {
+      Log.d("urlString","LOGIN CIE");
+      try {
+        Intent intent = new Intent();
+        if(urlString.toLowerCase().contains("preproduzione.idserver.servizicie")){
+          Log.d("urlString","LOGIN CIE PREPRODUZIONE");
+          intent.setClassName("it.ipzs.cieid.collaudo", "it.ipzs.cieid.BaseActivity");
         }else{
-            errorLogin()
+          intent.setClassName("it.ipzs.cieid", "it.ipzs.cieid.BaseActivity");
         }
+        intent.setData(Uri.parse(urlString));
+        intent.setAction(Intent.ACTION_VIEW);
+        startActivityForResult(intent, 0);
+        return;
+      } catch (ActivityNotFoundException a) {
+        sendLoginData("ERROR");
+        return;
+      }
     }
+    view.loadUrl(urlString);
+  }
 
-    private fun sendLoginData(data:String) {
-        val intent = Intent("LOGIN_SUCCESS")
-        intent.putExtra("login_data", data)
-        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
-    }
-
-    private fun destroyWebView() {
-        webView.removeAllViews()
-        webView.destroyDrawingCache()
-        webView.pauseTimers()
-        webView.clearCache(true)
-        webView.clearHistory()
-        val webSettings: WebSettings = webView.getSettings()
-        webSettings.saveFormData = false
-        webSettings.savePassword = false
-        webView.destroy();
-        clearCookiesWebView();
-    }
-
-    private fun clearCookiesWebView(){
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
-            CookieManager.getInstance().removeAllCookies(null)
-            CookieManager.getInstance().flush()
+  @Override
+  protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+    super.onActivityResult(requestCode, resultCode, data);
+    if (resultCode == Activity.RESULT_OK) {
+      String url = data.getStringExtra("URL");
+      if (!TextUtils.isEmpty(url)) {
+        if (url != null) {
+          webView.loadUrl(url);
         } else {
-            val cookieSyncMngr = CookieSyncManager.createInstance(this)
-            cookieSyncMngr.startSync()
-            val cookieManager = CookieManager.getInstance()
-            cookieManager.removeAllCookie()
-            cookieManager.removeSessionCookie()
-            cookieSyncMngr.stopSync()
-            cookieSyncMngr.sync()
+          sendLoginData("ERROR");
         }
+      } else {
+        sendLoginData("ERROR");
+      }
+    } else {
+      sendLoginData("ERROR");
     }
+  }
 
-    private fun onPageStarted(){
-        progressDialog.show()
-    }
+  private void sendLoginData(String data) {
+    Intent intent = new Intent("LOGIN_SUCCESS");
+    intent.putExtra("login_data", data);
+    LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+    termiateLogin();
+  }
 
-    private fun errorLogin(){
-        // Toast.makeText(applicationContext, "Error Login", Toast.LENGTH_SHORT).show()
-        sendLoginData("ERROR")
-        closeActivity()
-    }
+  private void destroyWebView() {
+    webView.removeAllViews();
+    webView.destroyDrawingCache();
+    webView.pauseTimers();
+    webView.clearCache(true);
+    webView.clearHistory();
+    // WebSettings webSettings = webView.getSettings();
+    webView.destroy();
+  }
 
-    private fun closeActivity(){
-        finish()
+  private void destroyAndClearCookies(){
+    destroyWebView();
+    clearCookiesWebView();
+  }
+
+  private void clearCookiesWebView() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+      CookieManager.getInstance().removeAllCookies(null);
+      CookieManager.getInstance().flush();
+    } else {
+      CookieSyncManager cookieSyncMngr = CookieSyncManager.createInstance(this);
+      cookieSyncMngr.startSync();
+      CookieManager cookieManager = CookieManager.getInstance();
+      cookieManager.removeAllCookie();
+      cookieManager.removeSessionCookie();
+      cookieSyncMngr.stopSync();
+      cookieSyncMngr.sync();
     }
+  }
+
+  private void finishActivity(){
+    finish();
+  }
+
+  private void initLoadingDialog(){
+    progressDialog = new ProgressDialog(this);
+    progressDialog.setCanceledOnTouchOutside(false);
+    progressDialog.setCancelable(true);
+    progressDialog.setTitle("Caricamento ...");
+    progressDialog.create();
+  }
+
+  private void showLoadingDialog(){
+    progressDialog.show();
+  }
+
+  private void closeLoadingDialog(){
+    progressDialog.hide();
+  }
+
+  private void disposeLoadingDialog(){
+    progressDialog.dismiss();
+  }
+
+  private void termiateLogin(){
+    closeLoadingDialog();
+    destroyAndClearCookies();
+    finishActivity();
+  }
 
 }
