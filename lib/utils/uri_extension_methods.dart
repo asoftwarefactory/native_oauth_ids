@@ -1,4 +1,5 @@
-import 'models/login_model.dart';
+
+import '../models/login_model.dart';
 
 extension ExtUri on Uri {
   static const codeKey = "code";
